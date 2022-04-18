@@ -2,6 +2,8 @@ package com.github.faucamp.simplertmp.io;
 
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import com.github.faucamp.simplertmp.RtmpHandler;
 import com.github.faucamp.simplertmp.RtmpPublisher;
 import com.github.faucamp.simplertmp.amf.AmfMap;
@@ -30,6 +32,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,7 +43,7 @@ import java.util.regex.Pattern;
 
 /**
  * Main RTMP connection implementation class
- * 
+ *
  * @author francois, leoma
  */
 public class RtmpConnection implements RtmpPublisher {
@@ -56,18 +61,19 @@ public class RtmpConnection implements RtmpPublisher {
     private String tcUrl;
     private String pageUrl;
     private Socket socket;
-    private String srsServerInfo = "";
+    private String serverInfo = "";
     private String socketExceptionCause = "";
     private RtmpSessionInfo rtmpSessionInfo;
     private RtmpDecoder rtmpDecoder;
     private BufferedInputStream inputStream;
     private BufferedOutputStream outputStream;
-    private Thread rxPacketHandler;
+    @Nullable
+    private Future<Void> rxPacketHandler;
     private volatile boolean connected = false;
     private volatile boolean publishPermitted = false;
     private final Object connectingLock = new Object();
     private final Object publishLock = new Object();
-    private AtomicInteger videoFrameCacheNumber = new AtomicInteger(0);
+    private final AtomicInteger videoFrameCacheNumber = new AtomicInteger(0);
     private int currentStreamId = 0;
     private int transactionIdCounter = 0;
     private AmfString serverIpAddr;
@@ -112,13 +118,13 @@ public class RtmpConnection implements RtmpPublisher {
             streamName = matcher.group(6);
         } else {
             mHandler.notifyRtmpIllegalArgumentException(new IllegalArgumentException(
-                "Invalid RTMP URL. Must be in format: rtmp://host[:port]/application/streamName"));
+                    "Invalid RTMP URL. Must be in format: rtmp://host[:port]/application/streamName"));
             return false;
         }
 
         if (appName == null || streamName == null) {
             mHandler.notifyRtmpIllegalArgumentException(new IllegalArgumentException(
-                "Invalid RTMP URL. Must be in format: rtmp://host[:port]/application/streamName"));
+                    "Invalid RTMP URL. Must be in format: rtmp://host[:port]/application/streamName"));
             return false;
         }
 
@@ -142,19 +148,15 @@ public class RtmpConnection implements RtmpPublisher {
         }
 
         // Start the "main" handling thread
-        rxPacketHandler = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    Log.d(TAG, "starting main rx handler loop");
-                    handleRxPacketLoop();
-                } catch (IOException ex) {
-                    Logger.getLogger(RtmpConnection.class.getName()).log(Level.SEVERE, null, ex);
-                }
+        rxPacketHandler = Executors.newCachedThreadPool().submit((Callable<Void>) () -> {
+            try {
+                Log.d(TAG, "starting main rx handler loop");
+                handleRxPacketLoop();
+            } catch (IOException ex) {
+                Logger.getLogger(RtmpConnection.class.getName()).log(Level.SEVERE, null, ex);
             }
+            return null;
         });
-        rxPacketHandler.start();
 
         return rtmpConnect();
     }
@@ -253,7 +255,7 @@ public class RtmpConnection implements RtmpPublisher {
             }
         }
         if (publishPermitted) {
-            mHandler.notifyRtmpConnected("Connected" + srsServerInfo);
+            mHandler.notifyRtmpConnected("Connected" + serverInfo);
         } else {
             shutdown();
         }
@@ -352,13 +354,8 @@ public class RtmpConnection implements RtmpPublisher {
             }
 
             // shutdown rxPacketHandler
-            if (rxPacketHandler != null) {
-                rxPacketHandler.interrupt();
-                try {
-                    rxPacketHandler.join();
-                } catch (InterruptedException ie) {
-                    rxPacketHandler.interrupt();
-                }
+            if (rxPacketHandler != null && !rxPacketHandler.isDone()) {
+                rxPacketHandler.cancel(true);
                 rxPacketHandler = null;
             }
 
@@ -512,7 +509,7 @@ public class RtmpConnection implements RtmpPublisher {
 
     private void handleRxPacketLoop() throws IOException {
         // Handle all queued received RTMP packets
-        while (!Thread.interrupted()) {
+        while (rxPacketHandler != null && !rxPacketHandler.isDone()) {
             try {
                 // It will be blocked when no data in input stream buffer
                 RtmpPacket rtmpPacket = rtmpDecoder.readPacket(inputStream);
@@ -590,7 +587,7 @@ public class RtmpConnection implements RtmpPublisher {
             Log.d(TAG, "handleRxInvoke: Got result for invoked method: " + method);
             if ("connect".equals(method)) {
                 // Capture server ip/pid/id information if any
-                srsServerInfo = onSrsServerInfo(invoke);
+                serverInfo = onSrsServerInfo(invoke);
                 // We can now send createStream commands
                 connected = true;
                 synchronized (connectingLock) {

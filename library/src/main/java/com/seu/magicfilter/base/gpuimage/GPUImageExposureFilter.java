@@ -20,7 +20,7 @@ import android.opengl.GLES20;
 
 import com.seu.magicfilter.utils.MagicFilterType;
 
-import net.ossrs.yasea.R;
+import cloud.shoplive.studio.R;
 
 /**
  * exposure: The adjusted exposure (-10.0 - 10.0, with 0.0 as the default)

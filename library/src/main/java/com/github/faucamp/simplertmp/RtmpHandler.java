@@ -3,6 +3,8 @@ package com.github.faucamp.simplertmp;
 import android.os.Handler;
 import android.os.Message;
 
+import androidx.annotation.Keep;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.SocketException;
@@ -10,7 +12,7 @@ import java.net.SocketException;
 /**
  * Created by leo.ma on 2016/11/3.
  */
-
+@Keep
 public class RtmpHandler extends Handler {
 
     private static final int MSG_RTMP_CONNECTING = 0;
@@ -138,6 +140,7 @@ public class RtmpHandler extends Handler {
         }
     }
 
+    @Keep
     public interface RtmpListener {
         
         void onRtmpConnecting(String msg);

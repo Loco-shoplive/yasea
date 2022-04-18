@@ -1,8 +1,11 @@
 package com.seu.magicfilter.utils;
 
+import androidx.annotation.Keep;
+
 /**
  * Created by why8222 on 2016/2/25.
  */
+@Keep
 public enum  MagicFilterType {
     NONE,
     FAIRYTALE,

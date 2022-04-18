@@ -1,10 +1,10 @@
-package net.ossrs.yasea;
+package cloud.shoplive.studio;
 
 import java.util.Arrays;
 
-public final class SrsAllocator {
+public final class ShopLiveAllocator {
 
-    public class Allocation {
+    public static class Allocation {
 
         private byte[] data;
         private int size;
@@ -66,7 +66,7 @@ public final class SrsAllocator {
      *
      * @param individualAllocationSize The length of each individual {@link Allocation}.
      */
-    public SrsAllocator(int individualAllocationSize) {
+    public ShopLiveAllocator(int individualAllocationSize) {
       this(individualAllocationSize, 0);
     }
 
@@ -77,7 +77,7 @@ public final class SrsAllocator {
      * @param individualAllocationSize The length of each individual {@link Allocation}.
      * @param initialAllocationCount The number of allocations to create up front.
      */
-    public SrsAllocator(int individualAllocationSize, int initialAllocationCount) {
+    public ShopLiveAllocator(int individualAllocationSize, int initialAllocationCount) {
         this.individualAllocationSize = individualAllocationSize;
         this.availableSentinel = initialAllocationCount + 10;
         this.availableAllocations = new Allocation[availableSentinel];

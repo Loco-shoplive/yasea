@@ -24,7 +24,7 @@ import android.opengl.GLES20;
 import com.seu.magicfilter.utils.MagicFilterType;
 import com.seu.magicfilter.utils.OpenGLUtils;
 
-import net.ossrs.yasea.R;
+import cloud.shoplive.studio.R;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

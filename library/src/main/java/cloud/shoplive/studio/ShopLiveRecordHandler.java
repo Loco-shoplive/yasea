@@ -1,7 +1,9 @@
-package net.ossrs.yasea;
+package cloud.shoplive.studio;
 
 import android.os.Handler;
 import android.os.Message;
+
+import androidx.annotation.Keep;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -9,8 +11,8 @@ import java.lang.ref.WeakReference;
 /**
  * Created by leo.ma on 2016/11/4.
  */
-
-public class SrsRecordHandler extends Handler {
+@Keep
+public class ShopLiveRecordHandler extends Handler {
 
     private static final int MSG_RECORD_PAUSE = 0;
     private static final int MSG_RECORD_RESUME = 1;
@@ -20,9 +22,9 @@ public class SrsRecordHandler extends Handler {
     private static final int MSG_RECORD_ILLEGEL_ARGUMENT_EXCEPTION = 4;
     private static final int MSG_RECORD_IO_EXCEPTION = 5;
 
-    private WeakReference<SrsRecordListener> mWeakListener;
+    private final WeakReference<ShopLiveRecordListener> mWeakListener;
 
-    public SrsRecordHandler(SrsRecordListener listener) {
+    public ShopLiveRecordHandler(ShopLiveRecordListener listener) {
         mWeakListener = new WeakReference<>(listener);
     }
 
@@ -52,7 +54,7 @@ public class SrsRecordHandler extends Handler {
 
     @Override  // runs on UI thread
     public void handleMessage(Message msg) {
-        SrsRecordListener listener = mWeakListener.get();
+        ShopLiveRecordListener listener = mWeakListener.get();
         if (listener == null) {
             return;
         }
@@ -80,8 +82,9 @@ public class SrsRecordHandler extends Handler {
                 throw new RuntimeException("unknown msg " + msg.what);
         }
     }
-    
-    public interface SrsRecordListener {
+
+    @Keep
+    public interface ShopLiveRecordListener {
 
         void onRecordPause();
 

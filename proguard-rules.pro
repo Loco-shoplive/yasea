@@ -1,2 +1,1 @@
--keep class net.ossrs.yasea.**{*;}
--keep class net.ossrs.yasea.SrsEncoder{*;}
+-keep class net.ossrs.yasea.**{ *; }

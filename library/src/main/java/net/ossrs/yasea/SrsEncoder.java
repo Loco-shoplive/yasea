@@ -12,13 +12,20 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.util.Log;
 
+import androidx.annotation.Keep;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import cloud.shoplive.studio.ShopLiveEncodeHandler;
+import cloud.shoplive.studio.ShopLiveFlvMuxer;
+import cloud.shoplive.studio.ShopLiveMp4Muxer;
+
 /**
  * Created by Leo Ma on 4/1/2016.
  */
+@Keep
 public class SrsEncoder {
     private static final String TAG = "SrsEncoder";
 
@@ -40,10 +47,10 @@ public class SrsEncoder {
     public static int aChannelConfig = AudioFormat.CHANNEL_IN_STEREO;
     public static final int ABITRATE = 64 * 1024;  // 64 kbps
 
-    private SrsEncodeHandler mHandler;
+    private ShopLiveEncodeHandler mHandler;
 
-    private SrsFlvMuxer flvMuxer;
-    private SrsMp4Muxer mp4Muxer;
+    private ShopLiveFlvMuxer flvMuxer;
+    private ShopLiveMp4Muxer mp4Muxer;
 
     private MediaCodecInfo vmci;
     private MediaCodec vencoder;
@@ -75,16 +82,16 @@ public class SrsEncoder {
     // NV16 -> YUV422SP  yyyy uv uv
     // YUY2 -> YUV422SP  yuyv yuyv
 
-    public SrsEncoder(SrsEncodeHandler handler) {
+    public SrsEncoder(ShopLiveEncodeHandler handler) {
         mHandler = handler;
         mVideoColorFormat = chooseVideoEncoder();
     }
 
-    public void setFlvMuxer(SrsFlvMuxer flvMuxer) {
+    public void setFlvMuxer(ShopLiveFlvMuxer flvMuxer) {
         this.flvMuxer = flvMuxer;
     }
 
-    public void setMp4Muxer(SrsMp4Muxer mp4Muxer) {
+    public void setMp4Muxer(ShopLiveMp4Muxer mp4Muxer) {
         this.mp4Muxer = mp4Muxer;
     }
 

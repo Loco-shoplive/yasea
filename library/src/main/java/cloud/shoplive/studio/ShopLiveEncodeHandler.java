@@ -1,23 +1,25 @@
-package net.ossrs.yasea;
+package cloud.shoplive.studio;
 
 import android.os.Handler;
 import android.os.Message;
+
+import androidx.annotation.Keep;
 
 import java.lang.ref.WeakReference;
 
 /**
  * Created by leo.ma on 2016/11/4.
  */
-
-public class SrsEncodeHandler extends Handler {
+@Keep
+public class ShopLiveEncodeHandler extends Handler {
 
     private static final int MSG_ENCODE_NETWORK_WEAK = 0;
     private static final int MSG_ENCODE_NETWORK_RESUME = 1;
     private static final int MSG_ENCODE_ILLEGAL_ARGUMENT_EXCEPTION = 2;
 
-    private WeakReference<SrsEncodeListener> mWeakListener;
+    private final WeakReference<ShopLiveEncodeListener> mWeakListener;
 
-    public SrsEncodeHandler(SrsEncodeListener listener) {
+    public ShopLiveEncodeHandler(ShopLiveEncodeListener listener) {
         mWeakListener = new WeakReference<>(listener);
     }
 
@@ -35,7 +37,7 @@ public class SrsEncodeHandler extends Handler {
     
     @Override  // runs on UI thread
     public void handleMessage(Message msg) {
-        SrsEncodeListener listener = mWeakListener.get();
+        ShopLiveEncodeListener listener = mWeakListener.get();
         if (listener == null) {
             return;
         }
@@ -54,7 +56,8 @@ public class SrsEncodeHandler extends Handler {
         }
     }
 
-    public interface SrsEncodeListener {
+    @Keep
+    public interface ShopLiveEncodeListener {
 
         void onNetworkWeak();
 

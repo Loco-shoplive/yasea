@@ -1,8 +1,10 @@
-package net.ossrs.yasea;
+package cloud.shoplive.studio;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import com.coremedia.iso.BoxParser;
 import com.coremedia.iso.IsoFile;
@@ -42,6 +44,8 @@ import com.googlecode.mp4parser.boxes.mp4.objectdescriptors.SLConfigDescriptor;
 import com.googlecode.mp4parser.util.Math;
 import com.googlecode.mp4parser.util.Matrix;
 
+import net.ossrs.yasea.SrsEncoder;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -55,24 +59,27 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by LeoMa on 2016/5/21.
  */
-public class SrsMp4Muxer {
+public class ShopLiveMp4Muxer {
 
-    private static final String TAG = "SrsMp4Muxer";
+    private static final String TAG = "ShopLiveMp4Muxer";
     private static final int VIDEO_TRACK = 100;
     private static final int AUDIO_TRACK = 101;
 
     private File mRecFile;
-    private SrsRecordHandler mHandler;
+    private ShopLiveRecordHandler mHandler;
 
     private MediaFormat videoFormat = null;
     private MediaFormat audioFormat = null;
 
-    private SrsRawH264Stream avc = new SrsRawH264Stream();
+    private ShopLiveRawH264Stream avc = new ShopLiveRawH264Stream();
     private Mp4Movie mp4Movie = new Mp4Movie();
 
     private boolean aacSpecConfig = false;
@@ -81,7 +88,8 @@ public class SrsMp4Muxer {
     private ArrayList<byte[]> spsList = new ArrayList<>();
     private ArrayList<byte[]> ppsList = new ArrayList<>();
 
-    private Thread worker;
+    @Nullable
+    private Future<Void> worker;
     private volatile boolean bRecording = false;
     private volatile boolean bPaused = false;
     private volatile boolean needToFindKeyFrame = true;
@@ -105,7 +113,7 @@ public class SrsMp4Muxer {
         samplingFrequencyIndexMap.put(8000, 0xb);
     }
 
-    public SrsMp4Muxer(SrsRecordHandler handler) {
+    public ShopLiveMp4Muxer(ShopLiveRecordHandler handler) {
         mHandler = handler;
     }
     
@@ -126,9 +134,7 @@ public class SrsMp4Muxer {
         }
         mp4Movie.addTrack(audioFormat, true);
 
-        worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
+        worker = Executors.newCachedThreadPool().submit((Callable<Void>) () -> {
                 bRecording = true;
                 while (bRecording) {
                     // Keep at least one audio and video frame in cache to ensure monotonically increasing.
@@ -142,13 +148,14 @@ public class SrsMp4Muxer {
                             // isEmpty() may take some time, so we set timeout to detect next frame
                             writeLock.wait(500);
                         } catch (InterruptedException ie) {
-                            worker.interrupt();
+                            if (worker != null && !worker.isDone()) {
+                                worker.cancel(true);
+                            }
                         }
                     }
                 }
-            }
+                return null;
         });
-        worker.start();
 
         return true;
     }
@@ -184,13 +191,8 @@ public class SrsMp4Muxer {
         aacSpecConfig = false;
         frameCache.clear();
 
-        if (worker != null) {
-            try {
-                worker.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                worker.interrupt();
-            }
+        if (worker != null && !worker.isDone()) {
+            worker.cancel(true);
             worker = null;
 
             finishMovie();
@@ -378,7 +380,7 @@ public class SrsMp4Muxer {
     /**
      * the raw h.264 stream, in annexb.
      */
-    private class SrsRawH264Stream {
+    private class ShopLiveRawH264Stream {
         public boolean is_sps(SrsEsFrameBytes frame) {
             if (frame.size < 1) {
                 return false;
